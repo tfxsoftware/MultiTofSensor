@@ -4,6 +4,8 @@ An Arduino/ESP32 library for managing multiple VL53L0X Time-of-Flight distance s
 
 ## Planned Features
 
+**note: this is still a work in progress, please do not use it yet!**
+
 ### Core Functionality
 - Multiple sensor management through I2C multiplexer (up to 8 channels)
 - Custom I2C interface support (Wire selection)
@@ -38,5 +40,3 @@ An Arduino/ESP32 library for managing multiple VL53L0X Time-of-Flight distance s
 - TCA9548A I2C Multiplexer (or compatible)
 - One or more VL53L0X sensors
 - I2C pull-up resistors (typically 4.7kΩ)
-
-## FUTURE
