@@ -2,19 +2,30 @@
     "name": "MultiTofSensor",
     "version": "1.0.0",
     "description": "Library for managing multiple VL53L0X ToF sensors using I2C multiplexers",
-    "keywords": "vl53l0x, tof, sensor, i2c, multiplexer",
+    "keywords": "vl53l0x, tof, sensor, i2c, multiplexer, esp32, arduino",
     "repository": {
         "type": "git",
         "url": "https://github.com/tfxsoftware/MultiTofSensor.git"
     },
-    "authors": {
-        "name": "TFXSOFTWARE",
-        "email": "aswespeak.tfx@gmail.com"
-    },
+    "authors": [
+        {
+            "name": "TFXSOFTWARE",
+            "email": "aswespeak.tfx@gmail.com",
+            "maintainer": true
+        }
+    ],
     "license": "MIT",
     "dependencies": {
         "adafruit/Adafruit_VL53L0X": "^1.1.0"
     },
-    "frameworks": "arduino",
-    "platforms": ["espressif32", "atmelavr", "atmelsam"]
+    "frameworks": ["arduino"],
+    "platforms": ["espressif32", "atmelavr", "atmelsam"],
+    "headers": "MultiTofSensor.h",
+    "examples": [
+        {
+            "name": "Basic Example",
+            "base": "examples/MultiSensorExample",
+            "files": ["MultiSensorExample.ino"]
+        }
+    ]
 } 
