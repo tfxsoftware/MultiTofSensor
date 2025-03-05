@@ -7,23 +7,102 @@ MultiTofSensor::MultiTofSensor(TwoWire *wire) {
     _channelMap = nullptr;
 }
 
-bool MultiTofSensor::begin(uint8_t muxAddress) {
-    _muxAddress = muxAddress;
-    
-    // Initialize the I2C bus
-    _wire->begin();
-    
-    // Test communication with multiplexer
-    _wire->beginTransmission(_muxAddress);
-    if (_wire->endTransmission() != 0) {
-        return false;
+MultiTofSensor::~MultiTofSensor() {
+    for (auto& sensor : _sensors) {
+        delete sensor.sensor;
     }
-    
-    // Allocate initial memory for sensors and channel map
-    _sensors = new Adafruit_VL53L0X[8];  // Support up to 8 sensors initially
-    _channelMap = new uint8_t[8];
+}
+
+bool MultiTofSensor::begin(int sda_pin, int scl_pin, uint32_t frequency) {
+    if (sda_pin >= 0 && scl_pin >= 0) {
+        _wire->begin(sda_pin, scl_pin);
+    } else {
+        _wire->begin();
+    }
+    _wire->setClock(frequency);
     
     return true;
+}
+
+void MultiTofSensor::scanI2CBus() {
+    Serial.println("\nScanning for I2C multiplexers...");
+    clearMultiplexers();
+    
+    for (uint8_t addr = MIN_MUX_ADDR; addr <= MAX_MUX_ADDR; addr++) {
+        _wire->beginTransmission(addr);
+        uint8_t error = _wire->endTransmission();
+        
+        if (error == 0) {
+            Serial.printf("Found multiplexer at address 0x%02X\n", addr);
+            scanMultiplexerChannels(addr);
+        }
+        delay(10);
+    }
+    
+    Serial.printf("Total sensors found: %d\n", _sensors.size());
+}
+
+void MultiTofSensor::scanMultiplexerChannels(uint8_t multiplexerAddr) {
+    for (uint8_t channel = 0; channel < MAX_CHANNELS; channel++) {
+        selectChannel(multiplexerAddr, channel);
+        
+        Adafruit_VL53L0X* sensor = new Adafruit_VL53L0X();
+        if (sensor->begin(0x29, false, _wire)) {
+            SensorInfo info = {multiplexerAddr, channel, sensor};
+            _sensors.push_back(info);
+            
+            Serial.printf("  Found sensor on channel %d\n", channel);
+        } else {
+            delete sensor;
+        }
+        delay(10);
+    }
+}
+
+uint16_t MultiTofSensor::readDistance(size_t sensorIndex) {
+    if (sensorIndex >= _sensors.size()) {
+        return 0;
+    }
+    
+    const auto& info = _sensors[sensorIndex];
+    selectChannel(info.multiplexerAddr, info.channel);
+    
+    VL53L0X_RangingMeasurementData_t measure;
+    info.sensor->rangingTest(&measure, false);
+    
+    clearMultiplexers();
+    
+    if (measure.RangeStatus != 4) {
+        return measure.RangeMilliMeter;
+    }
+    return 0;
+}
+
+void MultiTofSensor::selectChannel(uint8_t multiplexerAddr, uint8_t channel) {
+    clearMultiplexers();
+    
+    if (channel < MAX_CHANNELS) {
+        _wire->beginTransmission(multiplexerAddr);
+        _wire->write(1 << channel);
+        _wire->endTransmission();
+        delay(10);
+    }
+}
+
+void MultiTofSensor::clearMultiplexers() {
+    for (uint8_t addr = MIN_MUX_ADDR; addr <= MAX_MUX_ADDR; addr++) {
+        _wire->beginTransmission(addr);
+        _wire->write(0);
+        _wire->endTransmission();
+    }
+    delayMicroseconds(200);
+}
+
+const SensorInfo* MultiTofSensor::getSensorInfo(size_t index) const {
+    if (index >= _sensors.size()) {
+        return nullptr;
+    }
+    return &_sensors[index];
 }
 
 bool MultiTofSensor::addSensor(uint8_t muxChannel, uint8_t sensorAddress) {
@@ -48,25 +127,6 @@ bool MultiTofSensor::addSensor(uint8_t muxChannel, uint8_t sensorAddress) {
     return true;
 }
 
-uint16_t MultiTofSensor::readDistance(uint8_t muxChannel) {
-    int8_t sensorIndex = getSensorIndex(muxChannel);
-    if (sensorIndex < 0) {
-        return 0;
-    }
-    
-    if (!selectChannel(muxChannel)) {
-        return 0;
-    }
-    
-    VL53L0X_RangingMeasurementData_t measure;
-    _sensors[sensorIndex].rangingTest(&measure, false);
-    
-    if (measure.RangeStatus != 4) {
-        return measure.RangeMilliMeter;
-    }
-    return 0;
-}
-
 bool MultiTofSensor::setMeasurementTimingBudget(uint8_t muxChannel, uint32_t budget_us) {
     int8_t sensorIndex = getSensorIndex(muxChannel);
     if (sensorIndex < 0) {
@@ -77,7 +137,7 @@ bool MultiTofSensor::setMeasurementTimingBudget(uint8_t muxChannel, uint32_t bud
         return false;
     }
     
-    return _sensors[sensorIndex].setMeasurementTimingBudget(budget_us);
+    return _sensors[sensorIndex].sensor->setMeasurementTimingBudget(budget_us);
 }
 
 bool MultiTofSensor::setHighAccuracy(uint8_t muxChannel) {
@@ -106,16 +166,6 @@ bool MultiTofSensor::setLongRange(uint8_t muxChannel) {
     return true;
 }
 
-bool MultiTofSensor::selectChannel(uint8_t channel) {
-    if (channel > 7) {
-        return false;
-    }
-    
-    _wire->beginTransmission(_muxAddress);
-    _wire->write(1 << channel);
-    return (_wire->endTransmission() == 0);
-}
-
 int8_t MultiTofSensor::getSensorIndex(uint8_t channel) {
     for (uint8_t i = 0; i < _numSensors; i++) {
         if (_channelMap[i] == channel) {
@@ -124,3 +174,7 @@ int8_t MultiTofSensor::getSensorIndex(uint8_t channel) {
     }
     return -1;
 } 
+
+void MultiTofSensor::scanSensors() {
+    
+}
