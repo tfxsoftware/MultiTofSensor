@@ -178,3 +178,54 @@ int8_t MultiTofSensor::getSensorIndex(uint8_t channel) {
 void MultiTofSensor::scanSensors() {
     
 }
+
+std::vector<SensorReading> MultiTofSensor::readAllSensors() {
+    std::vector<SensorReading> readings;
+    
+    // First disable all channels on all multiplexers
+    disableAllChannels();
+    
+    // Read each sensor
+    for (const auto& sensorInfo : _sensors) {
+        // Select only this sensor's channel
+        selectChannel(sensorInfo.multiplexerAddr, sensorInfo.channel);
+        delay(1);  // Give sensor time to stabilize
+        
+        SensorReading reading;
+        reading.multiplexerAddr = sensorInfo.multiplexerAddr;
+        reading.channel = sensorInfo.channel;
+        
+        VL53L0X_RangingMeasurementData_t measure;
+        sensorInfo.sensor->rangingTest(&measure, false);
+        
+        if (measure.RangeStatus != 4) {
+            reading.distance = measure.RangeMilliMeter;
+            reading.valid = true;
+        } else {
+            reading.distance = 0;
+            reading.valid = false;
+        }
+        
+        readings.push_back(reading);
+        
+        // Disable this channel before moving to next
+        _wire->beginTransmission(sensorInfo.multiplexerAddr);
+        _wire->write(0);
+        _wire->endTransmission();
+        delayMicroseconds(200);
+    }
+    
+    // Finally, disable all channels again
+    disableAllChannels();
+    
+    return readings;
+}
+
+void MultiTofSensor::disableAllChannels() {
+    for (uint8_t addr = MIN_MUX_ADDR; addr <= MAX_MUX_ADDR; addr++) {
+        _wire->beginTransmission(addr);
+        _wire->write(0);  // Write 0 to disable all channels
+        _wire->endTransmission();
+    }
+    delayMicroseconds(200);
+}

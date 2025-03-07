@@ -12,6 +12,13 @@ struct SensorInfo {
     Adafruit_VL53L0X* sensor;
 };
 
+struct SensorReading {
+    uint8_t multiplexerAddr;
+    uint8_t channel;
+    uint16_t distance;
+    bool valid;
+};
+
 class MultiTofSensor {
 public:
     // Constructor
@@ -33,6 +40,9 @@ public:
     // Get sensor info
     const SensorInfo* getSensorInfo(size_t index) const;
 
+    // New method to read all sensors at once
+    std::vector<SensorReading> readAllSensors();
+
 private:
     static const uint8_t MAX_CHANNELS = 8;
     static const uint8_t MIN_MUX_ADDR = 0x70;
@@ -49,6 +59,9 @@ private:
     
     // Clear all multiplexer channels
     void clearMultiplexers();
+
+    // Helper method to disable all multiplexer channels
+    void disableAllChannels();
 };
 
 #endif // MULTI_TOF_SENSOR_H
