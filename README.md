@@ -2,9 +2,6 @@
 
 An Arduino/ESP32 library for managing multiple VL53L0X Time-of-Flight distance sensors through I2C multiplexers.
 
-## Planned Features
-
-**note: this is still a work in progress, please do not use it yet!**
 
 ### Core Functionality
 - Multiple sensor management through I2C multiplexer (up to 8 channels)
@@ -12,16 +9,12 @@ An Arduino/ESP32 library for managing multiple VL53L0X Time-of-Flight distance s
 - Dynamic sensor addition and mapping
 - Automatic channel and sensor management
 - Sensor Scanning
+- Sensor Reading
 
 ### Sensor Configuration
 - Configurable multiplexer address (default: 0x70)
 - Configurable sensor addresses (default: 0x29)
 - Measurement timing budget control
-
-### Operation Modes
-- High Accuracy Mode
-- High Speed Mode
-- Long Range Mode
 
 ### Hardware Support
 - ESP32 platform support
