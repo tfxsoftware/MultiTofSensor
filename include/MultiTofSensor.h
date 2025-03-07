@@ -17,6 +17,9 @@ struct SensorReading {
     uint8_t channel;
     uint16_t distance;
     bool valid;
+    
+    // Default constructor for invalid readings
+    SensorReading() : multiplexerAddr(0), channel(0), distance(0), valid(false) {}
 };
 
 class MultiTofSensor {
@@ -42,6 +45,12 @@ public:
 
     // New method to read all sensors at once
     std::vector<SensorReading> readAllSensors();
+
+    // Get reading from closest sensor
+    SensorReading getClosestReading();
+    
+    // Get reading from farthest sensor
+    SensorReading getFarthestReading();
 
 private:
     static const uint8_t MAX_CHANNELS = 8;

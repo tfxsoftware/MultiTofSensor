@@ -229,3 +229,35 @@ void MultiTofSensor::disableAllChannels() {
     }
     delayMicroseconds(200);
 }
+
+SensorReading MultiTofSensor::getClosestReading() {
+    auto readings = readAllSensors();
+    
+    SensorReading closest;
+    uint16_t minDistance = UINT16_MAX;
+    
+    for (const auto& reading : readings) {
+        if (reading.valid && reading.distance > 0 && reading.distance < minDistance) {
+            minDistance = reading.distance;
+            closest = reading;
+        }
+    }
+    
+    return closest;
+}
+
+SensorReading MultiTofSensor::getFarthestReading() {
+    auto readings = readAllSensors();
+    
+    SensorReading farthest;
+    uint16_t maxDistance = 0;
+    
+    for (const auto& reading : readings) {
+        if (reading.valid && reading.distance > maxDistance) {
+            maxDistance = reading.distance;
+            farthest = reading;
+        }
+    }
+    
+    return farthest;
+}
